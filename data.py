@@ -65,9 +65,12 @@ class My_Model_Dataset(Dataset):
         noisy_list = []
         name_list = []
 
-        for clean_path, noisy_path in zip(os.listdir(image_dir), os.listdir(noise_dir)):
-            clean_img = cv2.imread(clean_path, cv2.IMREAD_GRAYSCALE)  # 读取灰度图
-            noisy_img = cv2.imread(noisy_path, cv2.IMREAD_GRAYSCALE)  # 读取噪声图
+        for clean_name, noisy_name in zip(os.listdir(image_dir), os.listdir(noise_dir)):
+            clean_path = os.path.join(image_dir, clean_name)
+            noisy_path = os.path.join(noise_dir, noisy_name)
+
+            clean_img = cv2.imread(clean_path, cv2.IMREAD_GRAYSCALE)
+            noisy_img = cv2.imread(noisy_path, cv2.IMREAD_GRAYSCALE)
 
             img_list.append(clean_img)
             noisy_list.append(noisy_img)
@@ -97,10 +100,16 @@ class My_Model_Dataset(Dataset):
 
     def add_noise_to_patch(self, patch):
         """为每个patch添加噪声"""
+        # 将PyTorch张量转换为NumPy数组
+        patch_np = patch.squeeze(0).numpy() * 255.0  # 反归一化到原始像素范围
+
         # 添加高斯噪声
         mean = 0
         sigma = self.nose_level
-        gaussian_noise = np.random.normal(mean, sigma, patch.shape)
-        noisy_patch = np.clip(patch + gaussian_noise, 0, 255)  # 保证像素值在0-255之间
+        gaussian_noise = np.random.normal(mean, sigma, patch_np.shape)
+        noisy_patch = np.clip(patch_np + gaussian_noise, 0, 255)  # 保证像素值在0-255之间
 
-        return noisy_patch
+        # 将NumPy数组转换回PyTorch张量
+        noisy_patch_tensor = torch.tensor(noisy_patch, dtype=torch.float32).unsqueeze(0) / 255.0
+        return noisy_patch_tensor
+
