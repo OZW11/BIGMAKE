@@ -8,7 +8,7 @@ parser.add_argument(
     "--model_dir", default="models/ZWO_Ures", help="directory of the model"
 )
 parser.add_argument(
-    "--model_name", default="model_epoch_300.pth", help="the model name"
+    "--model_name", default="final_model.pth", help="the model name"
 )
 # 地址
 parser.add_argument(
