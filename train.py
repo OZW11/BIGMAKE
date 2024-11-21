@@ -6,7 +6,7 @@ import torch
 from torch import nn, optim
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
-from data import My_Model_Dataset
+from data import My_Art_Dataset, My_Real_Dataset
 from option import args
 from model import DnCNN  # 我模型还没改，写的DnCNN
 from loss import SSIM, MS_SSIM
@@ -15,6 +15,22 @@ from test import test
 save_dir = os.path.join('models', 'lj_oct')
 if not os.path.exists(save_dir):
     os.mkdir(save_dir)
+
+# 设置训练模式，使用人工生成噪声 or 采集噪声
+if args.training_mode == 'art':  # 人工生成噪声
+    My_Train_Dataset = My_Art_Dataset
+elif args.training_mode == 'real':  # 采集噪声
+    My_Train_Dataset = My_Real_Dataset
+else:
+    raise ValueError("args.training_mode must be art or real")
+
+# 设置测试模式，使用人工生成噪声 or 采集噪声
+if args.testing_mode == 'art':  # 人工生成噪声
+    My_Test_Dataset = My_Art_Dataset
+elif args.testing_mode == 'real':  # 采集噪声
+    My_Test_Dataset = My_Real_Dataset
+else:
+    raise ValueError("args.testing_mode must be art or real")
 
 
 def train(args):
@@ -27,7 +43,7 @@ def train(args):
 
     # ====================================step 1/5: 数据准备========================================================
     # 构建测试数据集实例
-    test_data = My_Model_Dataset(args, args.dir_test_ori_img, args.dir_test_noi_img, mode='test')
+    test_data = My_Test_Dataset(args, image_dir=args.dir_test_ori_img, noise_dir=args.dir_test_noi_img, mode='test')
 
     # 构建测试数据加载器
     test_loader = DataLoader(dataset=test_data, batch_size=1, shuffle=False)
@@ -53,8 +69,15 @@ def train(args):
         raise ValueError("Please input the correct loss function with --loss_func $loss function(mse or ssim)...")
 
     # ====================================step 4/5: 优化器定义================================================
-    # 定义Adam优化器
-    optimizer = optim.Adam(_model.parameters(), lr=args.lr)
+    # 根据命令行参数选择合适的优化器
+    if args.optimizer.lower() == 'adam':
+        optimizer = optim.Adam(_model.parameters(), lr=args.lr)
+    elif args.optimizer.lower() == 'sgd':
+        optimizer = optim.SGD(_model.parameters(), lr=args.lr)
+    elif args.optimizer.lower() == 'rmsprop':
+        optimizer = optim.RMSprop(_model.parameters(), lr=args.lr)
+    else:
+        raise ValueError("Please input the correct optimizer with --optimizer $optimizer(Adam or SGD or RMSprop)...")
 
     # 如果指定了起始轮次大于0，则加载之前训练的状态
     if args.start_epoch > 0:
@@ -70,14 +93,14 @@ def train(args):
     else:
         start_epoch = 0  # 如果没有指定起始轮次，则从第0轮开始
 
-    # 定义学习率调度器
-    milestone = [15 - args.start_epoch,
-                 22 - args.start_epoch,
-                 24 - args.start_epoch,
-                 26 - args.start_epoch,
-                 28 - args.start_epoch,
+    # 定义学习率调度器，这个数值我乱选取的，不知道数值有什么意义
+    milestone = [10 - args.start_epoch,
+                 20 - args.start_epoch,
                  30 - args.start_epoch,
-                 31 - args.start_epoch,
+                 40 - args.start_epoch,
+                 50 - args.start_epoch,
+                 60 - args.start_epoch,
+                 70 - args.start_epoch,
                  190]
 
     milestone = list(filter(lambda x: x > 0, milestone))  # 过滤掉负数里程碑
@@ -89,7 +112,8 @@ def train(args):
         start_time = time.time()
         _model.train()
         # 构建训练数据集实例
-        train_data = My_Model_Dataset(args, image_dir= args.dir_data, mode='train')
+        train_data = My_Train_Dataset(args, image_dir=args.dir_train_ori_img, noise_dir=args.dir_train_noi_img,
+                                      mode='train')
         # 构建训练数据加载器
         train_loader = DataLoader(dataset=train_data, batch_size=batch_size, num_workers=1)
 
@@ -117,7 +141,7 @@ def train(args):
             epoch + 1, args.epoch, epoch_loss, optimizer.param_groups[0]["lr"], elapsed_time))
 
         # ======================================保存模型和状态================================================
-        # 每隔十轮保存一次模型和状态
+        # 每隔多少轮保存一次模型和状态
         if (epoch + 1) % args.save_model_epoch == 0:
             model_save_path = os.path.join(save_dir, f'model_epoch_{epoch + 1:03d}.pth')
             torch.save(_model, model_save_path)
@@ -131,7 +155,7 @@ def train(args):
                                              loss_f=criterion)
 
             print("Epoch: {},  Loss: {:.4f}, PSNR: {:.4f},  SSIM: {:.4f}, Test Loss: {:.4f}".format(
-                 epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
+                epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
 
     torch.save(_model, os.path.join(save_dir, 'final_model.pth'))
     print(f"训练结束，模型已保存至 {os.path.join(save_dir, 'final_model.pth')}")
@@ -140,5 +164,5 @@ def train(args):
 
 if __name__ == '__main__':
     print("能不能用gpu:", torch.cuda.is_available())
+    print("使用的训练数据是：", args.training_mode, "使用的测试数据是：", args.testing_mode)
     train(args)
-

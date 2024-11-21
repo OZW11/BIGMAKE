@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from torch import nn
 from torch.utils.data import DataLoader
-from data import My_Model_Dataset
+from data import My_Art_Dataset
 from option import args
 from datetime import datetime
 from model import DnCNN
@@ -71,7 +71,7 @@ def test(args, data_loader, save_test_dir, save=False, model_file=None, loss_f=N
             nos_img_np = nos_img.cpu().squeeze().numpy()  # 转换为 Numpy 格式
             ori_img_np = ori_img.cpu().squeeze().numpy()
             output_np = output.cpu().squeeze().numpy()
-            show_and_save_comparison(nos_img_np, ori_img_np, output_np, save_path)
+            show_and_save_comparison(args, nos_img_np, ori_img_np, output_np, save_path)
 
     # 计算平均性能指标
     psnr_avg = np.mean(psnr_values)
@@ -83,7 +83,7 @@ def test(args, data_loader, save_test_dir, save=False, model_file=None, loss_f=N
     return psnr_avg, ssim_avg, loss_avg
 
 
-def show_and_save_comparison(noisy, original, denoised, save_path=None):
+def show_and_save_comparison(aegs, noisy, original, denoised, save_path=None):
     """
     显示并保存对比图像
 
@@ -98,7 +98,10 @@ def show_and_save_comparison(noisy, original, denoised, save_path=None):
 
     plt.subplot(1, 3, 1)
     plt.imshow(noisy, cmap='gray')
-    plt.title('Noisy Image')
+    if args.testing_mode == 'art':
+        plt.title(f'{args.noise_type} Noisy Image')
+    elif args.testing_mode == 'real':
+        plt.title('Collecting Noisy Image')
     plt.axis('off')
 
     plt.subplot(1, 3, 2)
@@ -121,7 +124,7 @@ def show_and_save_comparison(noisy, original, denoised, save_path=None):
 if __name__ == '__main__':
     print("能不能用gpu:", torch.cuda.is_available())
     print("Start to test.......")
-    test_data = My_Model_Dataset(args, args.dir_test_ori_img, args.dir_test_noi_img, mode='test')
+    test_data = My_Art_Dataset(args, args.dir_test_ori_img, args.dir_test_noi_img, mode='test')
     test_loader = DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 
     # 定义损失函数，使用均方误差损失（MSE）
