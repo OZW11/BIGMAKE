@@ -84,7 +84,7 @@ def train(args):
         print("Start to load state from %d epoch.............." % args.start_epoch)
 
         # 构建状态文件路径
-        state_path = os.path.join(save_dir, 'model_%03d.pth' % args.start_epoch)
+        state_path = os.path.join(save_dir, 'model_epoch_%03d.pth' % args.start_epoch)
         # 加载状态文件
         checkpoint = torch.load(state_path)
         _model.model.load_state_dict(checkpoint['net'])  # 加载模型参数
