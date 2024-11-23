@@ -8,7 +8,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from data import My_Art_Dataset, My_Real_Dataset
 from option import args
-from model import DnCNN  # 我模型还没改，写的DnCNN
+import model   
 from loss import SSIM, MS_SSIM
 from test import test
 
@@ -50,7 +50,7 @@ def train(args):
 
     # ===================================step 2/5: 模型构建========================================================
     # 实例化模型对象
-    _model = DnCNN(args)
+    _model = model.Ures(args)
     _model = _model.to(device)
 
     # ====================================step 3/5: 损失函数定义================================================
