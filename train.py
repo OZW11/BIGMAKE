@@ -12,7 +12,7 @@ import model
 from loss import SSIM, MS_SSIM
 from test import test
 
-save_dir = os.path.join('models', 'lj_oct')
+save_dir = args.model_dir
 if not os.path.exists(save_dir):
     os.mkdir(save_dir)
 
@@ -50,7 +50,7 @@ def train(args):
 
     # ===================================step 2/5: 模型构建========================================================
     # 实例化模型对象
-    _model = model.Ures(args)
+    _model = model.Ures_(args)
     _model = _model.to(device)
 
     # ====================================step 3/5: 损失函数定义================================================
@@ -147,15 +147,15 @@ def train(args):
             torch.save(_model, model_save_path)
 
             # 在测试数据集上评估模型性能
-            psnr_avg, ssim_avg, _loss = test(args,
-                                             test_loader,
-                                             args.save_test_dir,
-                                             save=False,
-                                             model_file=_model,
-                                             loss_f=criterion)
+            # psnr_avg, ssim_avg, _loss = test(args,
+            #                                  test_loader,
+            #                                  args.save_test_dir,
+            #                                  save=False,
+            #                                  model_file=_model,
+            #                                  loss_f=criterion)
 
-            print("Epoch: {},  Loss: {:.4f}, PSNR: {:.4f},  SSIM: {:.4f}, Test Loss: {:.4f}".format(
-                epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
+            # print("Epoch: {},  Loss: {:.4f}, PSNR: {:.4f},  SSIM: {:.4f}, Test Loss: {:.4f}".format(
+            #     epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
 
     torch.save(_model, os.path.join(save_dir, 'final_model.pth'))
     print(f"训练结束，模型已保存至 {os.path.join(save_dir, 'final_model.pth')}")

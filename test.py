@@ -38,8 +38,6 @@ def test(args, data_loader, save_test_dir, save=False, model_file=None, loss_f=N
         for idx, (ori_img, nos_img, img_name) in enumerate(data_loader):
             # 将含有噪声的图像移动到指定设备上
             nos_img = nos_img.to(device)
-            output = model_file(nos_img)
-
             # 模型去噪
             output = model_file(nos_img)
 
