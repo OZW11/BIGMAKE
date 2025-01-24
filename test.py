@@ -120,6 +120,7 @@ def show_and_save_comparison(aegs, noisy, original, denoised, save_path=None):
 
 
 if __name__ == '__main__':
+    
     print("能不能用gpu:", torch.cuda.is_available())
     print("Start to test.......")
     test_data = My_Art_Dataset(args, args.dir_test_ori_img, args.dir_test_noi_img, mode='test')
@@ -135,6 +136,6 @@ if __name__ == '__main__':
     psnr_avg, ssim_avg, _loss = test(args,
                                      test_loader,
                                      args.save_test_dir,
-                                     save=False,
+                                     save=True,
                                      model_file=model,
                                      loss_f=criterion)

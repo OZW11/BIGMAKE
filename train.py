@@ -50,7 +50,7 @@ def train(args):
 
     # ===================================step 2/5: 模型构建========================================================
     # 实例化模型对象
-    _model = model.Ures_(args)
+    _model = model.focusFilter(args)
     _model = _model.to(device)
 
     # ====================================step 3/5: 损失函数定义================================================
@@ -146,20 +146,20 @@ def train(args):
             model_save_path = os.path.join(save_dir, f'model_epoch_{epoch + 1:03d}.pth')
             torch.save(_model, model_save_path)
 
-            # 在测试数据集上评估模型性能
+            #在测试数据集上评估模型性能
             # psnr_avg, ssim_avg, _loss = test(args,
-            #                                  test_loader,
-            #                                  args.save_test_dir,
-            #                                  save=False,
-            #                                  model_file=_model,
-            #                                  loss_f=criterion)
+            #                                 test_loader,
+            #                                 args.save_test_dir,
+            #                                 save=False,
+            #                                 model_file=_model,
+            #                                 loss_f=criterion)
 
             # print("Epoch: {},  Loss: {:.4f}, PSNR: {:.4f},  SSIM: {:.4f}, Test Loss: {:.4f}".format(
             #     epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
 
     torch.save(_model, os.path.join(save_dir, 'final_model.pth'))
     print(f"训练结束，模型已保存至 {os.path.join(save_dir, 'final_model.pth')}")
-    print("使用的是", str(device))
+    print("使用的是", str(device))   
 
 
 if __name__ == '__main__':

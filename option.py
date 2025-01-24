@@ -2,10 +2,10 @@
 import argparse
 
 # 创建一个解析器对象，并设置描述信息
-parser = argparse.ArgumentParser(description='Ures')
-parser.add_argument('--model', type=str, default='Ures', help='choose a type of model')
-parser.add_argument('--model_dir', default='zwo_Ures', help='directory of the model')
-parser.add_argument('--model_name', default='final_model.pth', help='the model name')
+parser = argparse.ArgumentParser(description='focusFilter')
+parser.add_argument('--model', type=str, default='focusFilter', help='choose a type of model')
+parser.add_argument('--model_dir', default='zwo_focusFilter', help='directory of the model')
+parser.add_argument('--model_name', default='model_epoch_2000.pth', help='the model name')
 # 地址
 parser.add_argument('--dir_train_ori_img', type=str, default='train_real', help='Original image address of train data')
 parser.add_argument('--dir_train_noi_img', type=str, default='train_noise', help='Noise image address of train data')
@@ -15,7 +15,7 @@ parser.add_argument('--save_test_dir', type=str, default='save_test_image', help
 # 分块
 parser.add_argument('--patch_size', type=int, default=64, help='output patch size')
 parser.add_argument('--n_pat_per_image', type=int, default=256,help='a image produce n patches')
-parser.add_argument('--sigma', type=int, default=25, help='Gaussian noise variance')
+parser.add_argument('--sigma', type=int, default=20, help='Gaussian noise variance')
 parser.add_argument('--noise_type', type=str, default='gaussian', help='人工噪声类型：'
                                                                        '高斯gaussian，椒盐salt，泊松poisson，均匀uniform')
 # 训练
@@ -27,8 +27,8 @@ parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSp
                                                                                             'ADAM | RMSprop)')
 parser.add_argument('--loss_func', type=str, default='l2', help='choose the loss function')
 parser.add_argument('--start_epoch', type=int, default=0, help='the state is saved to here')
-parser.add_argument('--save_model_epoch', type=int, default=500, help='训练几个epoch保存一次模型')
-parser.add_argument('--training_mode', type=str, default='art', help='人工噪声用art，采集噪声用real')
+parser.add_argument('--save_model_epoch', type=int, default=100, help='训练几个epoch保存一次模型')
+parser.add_argument('--training_mode', type=str, default='real', help='人工噪声用art，采集噪声用real')
 parser.add_argument('--testing_mode', type=str, default='real', help='人工噪声用art，采集噪声用real')
 
 args = parser.parse_args()
