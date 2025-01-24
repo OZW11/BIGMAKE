@@ -4,7 +4,7 @@ import time
 import numpy as np
 import torch
 from torch import nn, optim
-from torch.optim.lr_scheduler import MultiStepLR
+import torch.optim.lr_scheduler
 from torch.utils.data import DataLoader
 from data import My_Art_Dataset, My_Real_Dataset
 from option import args
@@ -79,6 +79,20 @@ def train(args):
     else:
         raise ValueError("Please input the correct optimizer with --optimizer $optimizer(Adam or SGD or RMSprop)...")
 
+    # ====================================学习率调度器========================================================
+    if args.scheduler.lower() == 'steplr':
+        step_size = args.step_size if hasattr(args, 'step_size') else 100
+        gamma = args.gamma if hasattr(args, 'gamma') else 0.7
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+
+    elif args.scheduler.lower() == 'cosineannealinglr':
+        T_max = args.t_max if hasattr(args, 't_max') else 100
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max, eta_min=args.lr_min)
+
+    else:
+        raise ValueError(
+            "请正确选择学习率调度器：--scheduler $scheduler(steplr, cosineannealinglr)...")
+
     # 如果指定了起始轮次大于0，则加载之前训练的状态
     if args.start_epoch > 0:
         print("Start to load state from %d epoch.............." % args.start_epoch)
@@ -86,26 +100,13 @@ def train(args):
         # 构建状态文件路径
         state_path = os.path.join(save_dir, 'model_epoch_%03d.pth' % args.start_epoch)
         # 加载状态文件
-        checkpoint = torch.load(state_path)
-        _model.model.load_state_dict(checkpoint['net'])  # 加载模型参数
-        optimizer.load_state_dict(checkpoint['optimizer'])  # 加载优化器状态
-        start_epoch = checkpoint['epoch']  # 设置起始轮次
+        checkpoint = torch.load(state_path, weights_only=False)  # 显式声明使用完整状态
+        _model.load_state_dict(checkpoint['model_state'])  # 加载模型参数
+        optimizer.load_state_dict(checkpoint['optimizer_state'])  # 加载优化器状态
+        scheduler.load_state_dict(checkpoint['scheduler_state'])  # 加载调度器状态
+        start_epoch = checkpoint['epoch']  # 恢复训练轮次
     else:
         start_epoch = 0  # 如果没有指定起始轮次，则从第0轮开始
-
-    # 定义学习率调度器，这个数值我乱选取的，不知道数值有什么意义
-    milestone = [10 - args.start_epoch,
-                 20 - args.start_epoch,
-                 30 - args.start_epoch,
-                 40 - args.start_epoch,
-                 50 - args.start_epoch,
-                 60 - args.start_epoch,
-                 70 - args.start_epoch,
-                 190]
-
-    milestone = list(filter(lambda x: x > 0, milestone))  # 过滤掉负数里程碑
-
-    scheduler = MultiStepLR(optimizer, milestones=milestone, gamma=0.5)  # 学习率调度器
 
     # ====================================step 5/5: 训练过程================================================
     for epoch in range(start_epoch, args.epoch):
@@ -144,7 +145,12 @@ def train(args):
         # 每隔多少轮保存一次模型和状态
         if (epoch + 1) % args.save_model_epoch == 0:
             model_save_path = os.path.join(save_dir, f'model_epoch_{epoch + 1:03d}.pth')
-            torch.save(_model, model_save_path)
+            torch.save({
+                'epoch': epoch,
+                'model_state': _model.state_dict(),
+                'optimizer_state': optimizer.state_dict(),
+                'scheduler_state': scheduler.state_dict()  # 保存调度器的状态
+            }, model_save_path)
 
             #在测试数据集上评估模型性能
             # psnr_avg, ssim_avg, _loss = test(args,
@@ -157,7 +163,12 @@ def train(args):
             # print("Epoch: {},  Loss: {:.4f}, PSNR: {:.4f},  SSIM: {:.4f}, Test Loss: {:.4f}".format(
             #     epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
 
-    torch.save(_model, os.path.join(save_dir, 'final_model.pth'))
+    torch.save({
+        'epoch': epoch,
+        'model_state': _model.state_dict(),
+        'optimizer_state': optimizer.state_dict(),
+        'scheduler_state': scheduler.state_dict()
+    }, os.path.join(save_dir, 'final_model.pth'))
     print(f"训练结束，模型已保存至 {os.path.join(save_dir, 'final_model.pth')}")
     print("使用的是", str(device))   
 

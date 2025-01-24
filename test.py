@@ -8,11 +8,10 @@ from torch import nn
 from torch.utils.data import DataLoader
 from data import My_Art_Dataset
 from option import args
-from datetime import datetime
-from model import DnCNN
+import model
 
 
-def test(args, data_loader, save_test_dir, save=False, model_file=None, loss_f=None):
+def test(args, data_loader, save_test_dir, device, save=False, model_file=None, loss_f=None):
     """
     参数:
         args: 命令行参数对象
@@ -27,10 +26,6 @@ def test(args, data_loader, save_test_dir, save=False, model_file=None, loss_f=N
         ssim_avg: 平均 SSIM
         loss_avg: 平均损失
     """
-    # 设置模型为评估模式
-    model_file.eval()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # 初始化性能评估指标
     psnr_values, ssim_values, loss_values = [], [], []
 
@@ -120,7 +115,7 @@ def show_and_save_comparison(aegs, noisy, original, denoised, save_path=None):
 
 
 if __name__ == '__main__':
-    
+
     print("能不能用gpu:", torch.cuda.is_available())
     print("Start to test.......")
     test_data = My_Art_Dataset(args, args.dir_test_ori_img, args.dir_test_noi_img, mode='test')
@@ -130,12 +125,43 @@ if __name__ == '__main__':
     criterion = nn.MSELoss(reduction='sum')
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = torch.load(os.path.join(args.model_dir, args.model_name), map_location=device)
 
-    # 调用测试函数 `test`，传入必要的参数
+    # 初始化模型
+    _model = model.focusFilter(args).to(device)
+
+    # 加载保存的模型文件
+    checkpoint = torch.load(os.path.join(args.model_dir, args.model_name), map_location=device)
+
+    # 区分保存方式
+    if isinstance(checkpoint, dict):  # 如果是字典，说明保存的是 state_dict
+        print("检测到保存的是 state_dict 格式")
+
+        # 初始化模型
+        _model = model.focusFilter(args).to(device)
+
+        # 加载 state_dict
+        if "model_state" in checkpoint:  # 检查是否包含键
+            state_dict = checkpoint["model_state"]
+        else:
+            state_dict = checkpoint  # 直接是 state_dict 本身
+
+        _model.load_state_dict(state_dict)
+
+    elif isinstance(checkpoint, nn.Module):  # 如果是 nn.Module，说明保存的是整个模型实例
+        print("检测到保存的是模型实例")
+        _model = checkpoint.to(device)
+
+    else:
+        raise TypeError("未知的模型文件格式，请检查保存方式！")
+
+    # 切换模型到评估模式
+    _model.eval()
+
+    # 调用测试函数
     psnr_avg, ssim_avg, _loss = test(args,
                                      test_loader,
                                      args.save_test_dir,
-                                     save=True,
-                                     model_file=model,
+                                     device,
+                                     save=False,
+                                     model_file=_model,  # 传入正确的模型实例
                                      loss_f=criterion)

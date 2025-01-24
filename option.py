@@ -22,7 +22,7 @@ parser.add_argument('--noise_type', type=str, default='gaussian', help='人工�
 parser.add_argument('--epoch', type=int, default=6000, help='number of epochs to train')
 parser.add_argument('--batch_size', type=int, default=40, help='input batch size for training')
 parser.add_argument('--test_batch_size', type=int, default=1, help='input batch size for training')
-parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
+parser.add_argument('--lr', type=float, default=0.0005, help='learning rate')
 parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSprop'), help='optimizer to use (SGD | '
                                                                                             'ADAM | RMSprop)')
 parser.add_argument('--loss_func', type=str, default='l2', help='choose the loss function')
@@ -30,5 +30,16 @@ parser.add_argument('--start_epoch', type=int, default=0, help='the state is sav
 parser.add_argument('--save_model_epoch', type=int, default=100, help='训练几个epoch保存一次模型')
 parser.add_argument('--training_mode', type=str, default='real', help='人工噪声用art，采集噪声用real')
 parser.add_argument('--testing_mode', type=str, default='real', help='人工噪声用art，采集噪声用real')
+
+# 学习率
+parser.add_argument('--scheduler', type=str, default='StepLR', help='学习率调度器'
+                                                                    'StepLR：固定间隔步长衰减'
+                                                                    'CosineAnnealingLR：余弦退火'
+                                                                    '目前只写了这俩，可再试试其他的')
+parser.add_argument('--step_size', type=int, default=100, help='固定间隔步长衰减_衰减步长')
+parser.add_argument('--gamma', type=float, default=0.7, help='固定间隔步长衰减_gamma')
+# 学习率在每两个T_max间隔内完成一次从max到min，再从min到max的变化，直至总epoch结束
+parser.add_argument('--t_max', type=int, default=100, help='余弦退火_最大迭代次数')
+parser.add_argument('--lr_min', type=float, default=1e-8, help='余弦退火_最小学习率')
 
 args = parser.parse_args()
