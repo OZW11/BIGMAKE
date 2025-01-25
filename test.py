@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from torch import nn
 from torch.utils.data import DataLoader
-from data import My_Art_Dataset
+from data import My_Art_Dataset, My_Real_Dataset
 from option import args
 import model
 
@@ -115,10 +115,18 @@ def show_and_save_comparison(aegs, noisy, original, denoised, save_path=None):
 
 
 if __name__ == '__main__':
-
     print("能不能用gpu:", torch.cuda.is_available())
     print("Start to test.......")
-    test_data = My_Art_Dataset(args, args.dir_test_ori_img, args.dir_test_noi_img, mode='test')
+
+    # 设置测试模式，使用人工生成噪声 or 采集噪声
+    if args.testing_mode == 'art':  # 人工生成噪声
+        My_Test_Dataset = My_Art_Dataset
+    elif args.testing_mode == 'real':  # 采集噪声
+        My_Test_Dataset = My_Real_Dataset
+    else:
+        raise ValueError("args.testing_mode must be art or real")
+
+    test_data = My_Test_Dataset(args, image_dir=args.dir_test_ori_img, noise_dir=args.dir_test_noi_img, mode='test')
     test_loader = DataLoader(dataset=test_data, batch_size=1, shuffle=False)
 
     # 定义损失函数，使用均方误差损失（MSE）
