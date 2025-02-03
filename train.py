@@ -21,6 +21,8 @@ if args.training_mode == 'art':  # 人工生成噪声
     My_Train_Dataset = My_Art_Dataset
 elif args.training_mode == 'real':  # 采集噪声
     My_Train_Dataset = My_Real_Dataset
+elif args.training_mode == 'invert':  # 干净图作为数据，噪声图作为预测
+    My_Train_Dataset = My_Real_Dataset  # 使用的是采集图像
 else:
     raise ValueError("args.training_mode must be art or real")
 
@@ -29,6 +31,8 @@ if args.testing_mode == 'art':  # 人工生成噪声
     My_Test_Dataset = My_Art_Dataset
 elif args.testing_mode == 'real':  # 采集噪声
     My_Test_Dataset = My_Real_Dataset
+elif args.testing_mode == 'invert':  # 干净图作为数据，噪声图作为预测
+    My_Test_Dataset = My_Real_Dataset  # 使用的是采集图像
 else:
     raise ValueError("args.testing_mode must be art or real")
 
@@ -43,7 +47,10 @@ def train(args):
 
     # ====================================step 1/5: 数据准备========================================================
     # 构建测试数据集实例
-    test_data = My_Test_Dataset(args, image_dir=args.dir_test_ori_img, noise_dir=args.dir_test_noi_img, mode='test')
+    if args.testing_mode == 'invert':
+        test_data = My_Test_Dataset(args, image_dir=args.dir_test_noi_img, noise_dir=args.dir_test_ori_img, mode='test')
+    else:
+        test_data = My_Test_Dataset(args, image_dir=args.dir_test_ori_img, noise_dir=args.dir_test_noi_img, mode='test')
 
     # 构建测试数据加载器
     test_loader = DataLoader(dataset=test_data, batch_size=1, shuffle=False)
@@ -113,7 +120,11 @@ def train(args):
         start_time = time.time()
         _model.train()
         # 构建训练数据集实例
-        train_data = My_Train_Dataset(args, image_dir=args.dir_train_ori_img, noise_dir=args.dir_train_noi_img,
+        if args.testing_mode == 'invert':
+            train_data = My_Train_Dataset(args, image_dir=args.dir_train_noi_img, noise_dir=args.dir_train_ori_img,
+                                          mode='train')
+        else:
+            train_data = My_Train_Dataset(args, image_dir=args.dir_train_ori_img, noise_dir=args.dir_train_noi_img,
                                       mode='train')
         # 构建训练数据加载器
         train_loader = DataLoader(dataset=train_data, batch_size=batch_size, num_workers=1)
@@ -152,16 +163,17 @@ def train(args):
                 'scheduler_state': scheduler.state_dict()  # 保存调度器的状态
             }, model_save_path)
 
-            #在测试数据集上评估模型性能
-            # psnr_avg, ssim_avg, _loss = test(args,
-            #                                 test_loader,
-            #                                 args.save_test_dir,
-            #                                 save=False,
-            #                                 model_file=_model,
-            #                                 loss_f=criterion)
+            # 在测试数据集上评估模型性能
+            psnr_avg, ssim_avg, _loss = test(args,
+                                            test_loader,
+                                            args.save_test_dir,
+                                            device,
+                                            save=False,
+                                            model_file=_model,
+                                            loss_f=criterion)
 
-            # print("Epoch: {},  Loss: {:.4f}, PSNR: {:.4f},  SSIM: {:.4f}, Test Loss: {:.4f}".format(
-            #     epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
+            print("Epoch: {},  Loss: {:.4f}, PSNR: {:.4f},  SSIM: {:.4f}, Test Loss: {:.4f}".format(
+                epoch + 1, epoch_loss, psnr_avg, ssim_avg, _loss))
 
     torch.save({
         'epoch': epoch,

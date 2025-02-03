@@ -27,9 +27,9 @@ parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSp
                                                                                             'ADAM | RMSprop)')
 parser.add_argument('--loss_func', type=str, default='l2', help='choose the loss function')
 parser.add_argument('--start_epoch', type=int, default=0, help='the state is saved to here')
-parser.add_argument('--save_model_epoch', type=int, default=100, help='训练几个epoch保存一次模型')
-parser.add_argument('--training_mode', type=str, default='real', help='人工噪声用art，采集噪声用real')
-parser.add_argument('--testing_mode', type=str, default='real', help='人工噪声用art，采集噪声用real')
+parser.add_argument('--save_model_epoch', type=int, default=10, help='训练几个epoch保存一次模型')
+parser.add_argument('--training_mode', type=str, default='invert', help='人工噪声用art，采集噪声用real，倒转用invert')
+parser.add_argument('--testing_mode', type=str, default='invert', help='人工噪声用art，采集噪声用real，倒转用invert')
 
 # 学习率
 parser.add_argument('--scheduler', type=str, default='StepLR', help='学习率调度器'

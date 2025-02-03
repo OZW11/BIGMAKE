@@ -76,7 +76,7 @@ def test(args, data_loader, save_test_dir, device, save=False, model_file=None, 
     return psnr_avg, ssim_avg, loss_avg
 
 
-def show_and_save_comparison(aegs, noisy, original, denoised, save_path=None):
+def show_and_save_comparison(noisy, original, denoised, save_path=None):
     """
     显示并保存对比图像
 
